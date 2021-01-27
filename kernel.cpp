@@ -1,8 +1,11 @@
 #include "types.h"
 #include "gdt.h"
+#include "interrupts.h"
+#include "keyboard.h"
+#include "mouse.h"
 #define SCREEEN_HEIGHT 25
 #define SCREEEN_WITDH 80 
-void printf(int8_t *str)
+void printf(char *str)
 {
     static uint16_t *graphicPointer = (uint16_t *)0xb8000;
     static uint8_t x = 0, y = 0;
@@ -30,7 +33,7 @@ void printf(int8_t *str)
         if (y >= SCREEEN_HEIGHT)
         {
             for (int i = 0; i < SCREEEN_HEIGHT; ++i)
-                for (int j = 0; j < SCREEEN_WITDH; ++i)
+                for (int j = 0; j < SCREEEN_WITDH; ++j)
                     graphicPointer[i * SCREEEN_WITDH + j] = (graphicPointer[i * SCREEEN_WITDH + j] & 0xFF00) | ' ';
             y = 0;
             x = 0;
@@ -50,8 +53,12 @@ extern "C" void callConstructors()
 
 extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumber*/)
 {
-    printf("Booting up the system. But while I'm being ready you can solve the problem that I have! Tell me how much bannana can be in a basket full of apples containing 18 apples?\nThink about it and I'll do my job!");
+    printf("Booting up the system.\n");
     GlobalDescriptorTable gdt;
-    printf("\nWell I'm done. The answer was 0 :). gl hf!");
+    InterruptManager interrupts(&gdt);
+    KeyboardDriver keyboard(&interrupts);
+    MouseDriver mouse(&interrupts);
+    interrupts.Activate();
+    //printf("\nWell I'm done.");
     while (1);
 }
