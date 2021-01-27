@@ -1,7 +1,9 @@
 
 # Created by https://www.toptal.com/developers/gitignore/api/assembler,c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=assembler,c++
-
+###Kernel
+*.iso
+*.bin
 ### Assembler ###
 *.exe
 *.o
