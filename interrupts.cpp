@@ -1,5 +1,6 @@
 #include "interrupts.h"
 void printf(char* str);
+void printfHex(uint8_t);
 InterruptHandler::InterruptHandler(uint8_t interruptNumber, InterruptManager* interruptManager){
     this->interruptManager = interruptManager;
     this->interruptNumber = interruptNumber;
@@ -99,10 +100,9 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp){
     }
     else if(interrupt != 0x20){
         char* hex = "0123456789ABCDEF";
-        char* interruptText = "Unhandled Interrupt 0x00\n";
-        interruptText[23] = hex[interrupt & 0xf];
-        interruptText[22] = hex[(interrupt >> 4) & 0xf];
-        printf(interruptText);
+        printf("Unhandled Interrupt 0x");
+        printfHex(interrupt);
+        printf("\n");
     }
     if(interrupt >= 0x20 && interrupt < 0x30){
         picMasterCommand.Write(0x20);

@@ -1,6 +1,7 @@
 #include "types.h"
 #include "gdt.h"
 #include "interrupts.h"
+#include "driver.h"
 #include "keyboard.h"
 #include "mouse.h"
 #define SCREEEN_HEIGHT 25
@@ -41,6 +42,13 @@ void printf(char *str)
     }
 }
 
+void printfHex(uint8_t key){
+    char* hex = "0123456789abcdef";
+    char* text = "00";
+    text[0] = hex[(key>>4) & 0x0f];
+    text[1] = hex[ key & 0x0f];
+    printf(text);
+}
 typedef void (*constructor)();
 extern "C" constructor start_ctors;
 extern "C" constructor end_ctors;
@@ -51,13 +59,63 @@ extern "C" void callConstructors()
         (*i)();
 }
 
+class PrintfKeyboardEventHandler : public KeyboardEventHandler
+{
+    public:
+        void OnKeyDown(char c){
+            char* text = " ";
+            text[0]= c;
+            printf(text);
+        }
+};
+
+class MouseToConsole : public MouseEventHandler{
+    private:
+        int8_t x, y;
+        uint16_t* VideoMemory = (uint16_t*)0xb8000;
+    public:
+        MouseToConsole() { }
+
+        virtual void OnMouseActivate(){
+            x = SCREEEN_WITDH / 2;
+            y = SCREEEN_HEIGHT / 2;
+            uint16_t* VideoMemory = (uint16_t*)0xb8000;
+            int16_t middle = SCREEEN_WITDH * y + x;
+            VideoMemory[middle] = ((VideoMemory[middle] & 0xf000) >> 4)
+                                            | ((VideoMemory[middle] & 0x0f00) << 4)
+                                            | (VideoMemory[middle] & 0x00ff);
+        }
+        virtual void OnMouseMove(uint8_t deltax, uint8_t deltay){
+            VideoMemory[SCREEEN_WITDH * y + x] = ((VideoMemory[SCREEEN_WITDH * y + x] & 0xf000) >> 4)
+                                                | ((VideoMemory[SCREEEN_WITDH * y + x] & 0x0f00) << 4)
+                                                | (VideoMemory[SCREEEN_WITDH * y + x] & 0x00ff); 
+            x += deltax;
+            if(x < 0) x = 0;
+            if(x >= SCREEEN_WITDH) x = SCREEEN_WITDH - 1;
+
+            y += deltay;
+            if(y < 0) y = 0;
+            if(y >= SCREEEN_HEIGHT) y = SCREEEN_HEIGHT - 1;
+            // flip colors
+            VideoMemory[SCREEEN_WITDH * y + x] = ((VideoMemory[SCREEEN_WITDH * y + x] & 0xf000) >> 4)
+                                                | ((VideoMemory[SCREEEN_WITDH * y + x] & 0x0f00) << 4)
+                                                | (VideoMemory[SCREEEN_WITDH * y + x] & 0x00ff); 
+        
+        }
+};
 extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumber*/)
 {
     printf("Booting up the system.\n");
     GlobalDescriptorTable gdt;
     InterruptManager interrupts(&gdt);
-    KeyboardDriver keyboard(&interrupts);
-    MouseDriver mouse(&interrupts);
+    DriverManager drvMgr;
+    PrintfKeyboardEventHandler keyboardEventHandler;
+    KeyboardDriver keyboard(&interrupts, &keyboardEventHandler);
+    drvMgr.AddDriver(&keyboard);
+    MouseToConsole mouseHandlr;
+    MouseDriver mouse(&interrupts, &mouseHandlr);
+    drvMgr.AddDriver(&mouse);
+    drvMgr.ActivateAll();
     interrupts.Activate();
     //printf("\nWell I'm done.");
     while (1);
