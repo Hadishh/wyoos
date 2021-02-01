@@ -1,9 +1,12 @@
 #include <common/types.h>
 #include <gdt.h>
 #include <hardwarecommunication/interrupts.h>
+#include <hardwarecommunication/pci.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
+#include <drivers/vga.h>
+#include <gui/desktop.h>
 #define SCREEEN_HEIGHT 25
 #define SCREEEN_WITDH 80 
 
@@ -11,6 +14,7 @@ using namespace myos;
 using namespace myos::common;
 using namespace myos::hardwarecommunication;
 using namespace myos::drivers;
+using namespace myos::gui;
 
 void printf(char *str)
 {
@@ -116,15 +120,25 @@ extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumb
     printf("Booting up the system.\n");
     GlobalDescriptorTable gdt;
     InterruptManager interrupts(&gdt);
+    Desktop desktop(320, 200, 0x00, 0x00, 0xa8);
     DriverManager drvMgr;
-    PrintfKeyboardEventHandler keyboardEventHandler;
-    KeyboardDriver keyboard(&interrupts, &keyboardEventHandler);
+    //PrintfKeyboardEventHandler keyboardEventHandler;
+    // KeyboardDriver keyboard(&interrupts, &keyboardEventHandler);
+    KeyboardDriver keyboard(&interrupts, &desktop);
     drvMgr.AddDriver(&keyboard);
-    MouseToConsole mouseHandlr;
-    MouseDriver mouse(&interrupts, &mouseHandlr);
+    // MouseToConsole mouseHandlr;
+    // MouseDriver mouse(&interrupts, &mouseHandlr);
+    MouseDriver mouse(&interrupts, &desktop);
     drvMgr.AddDriver(&mouse);
+    PeripheralComponentInterconnectController PCIController;
+    PCIController.SelectDrivers(&drvMgr, &interrupts);
+    VideoGraphicsArray vga;
     drvMgr.ActivateAll();
-    interrupts.Activate();
     //printf("\nWell I'm done.");
-    while (1);
+    vga.SetMode(320, 200, 8);
+
+    interrupts.Activate();
+    while (1){
+        desktop.Draw(&vga);
+    }
 }
