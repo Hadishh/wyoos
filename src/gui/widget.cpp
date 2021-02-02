@@ -105,8 +105,8 @@ void CompositeWidget::OnMouseMove(int32_t oldx, int32_t oldy, int32_t newx, int3
     int firstChild = -1;
     for(int i = 0 ;i < numChildren; ++i)
         if(children[i]->ContainsCoordinate(oldx - this->x, oldy - this->y)){
-            firstChild = i;
             children[i]->OnMouseMove(oldx - this->x, oldy - this->y, newx - this->x, newy - this->y);
+            firstChild = i;
             break;
         }
     for(int i = 0 ;i < numChildren; ++i)

@@ -7,8 +7,11 @@
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
 #include <gui/desktop.h>
+#include <gui/window.h>
 #define SCREEEN_HEIGHT 25
 #define SCREEEN_WITDH 80 
+
+// #define GRAPHICS_MODE
 
 using namespace myos;
 using namespace myos::common;
@@ -122,23 +125,40 @@ extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumb
     InterruptManager interrupts(&gdt);
     Desktop desktop(320, 200, 0x00, 0x00, 0xa8);
     DriverManager drvMgr;
-    //PrintfKeyboardEventHandler keyboardEventHandler;
-    // KeyboardDriver keyboard(&interrupts, &keyboardEventHandler);
-    KeyboardDriver keyboard(&interrupts, &desktop);
+    #ifndef GRAPHICS_MODE
+        PrintfKeyboardEventHandler keyboardEventHandler;
+        KeyboardDriver keyboard(&interrupts, &keyboardEventHandler);
+    #endif
+    #ifdef GRAPHICS_MODE
+        KeyboardDriver keyboard(&interrupts, &desktop);
+    #endif
     drvMgr.AddDriver(&keyboard);
-    // MouseToConsole mouseHandlr;
-    // MouseDriver mouse(&interrupts, &mouseHandlr);
-    MouseDriver mouse(&interrupts, &desktop);
+    #ifndef GRAPHICS_MODE
+        MouseToConsole mouseHandlr;
+        MouseDriver mouse(&interrupts, &mouseHandlr);
+    #endif
+    #ifdef GRAPHICS_MODE
+        MouseDriver mouse(&interrupts, &desktop);
+    #endif
     drvMgr.AddDriver(&mouse);
     PeripheralComponentInterconnectController PCIController;
     PCIController.SelectDrivers(&drvMgr, &interrupts);
-    VideoGraphicsArray vga;
+    #ifdef GRAPHICS_MODE
+        VideoGraphicsArray vga;
+    #endif
     drvMgr.ActivateAll();
     //printf("\nWell I'm done.");
-    vga.SetMode(320, 200, 8);
-
+    #ifdef GRAPHICS_MODE
+        vga.SetMode(320, 200, 8);
+        Window win1(&desktop, 10, 10, 20, 20, 0xa8, 0x00, 0x00);
+        desktop.AddChild(&win1);
+        Window win2(&desktop, 40, 15, 30, 30, 0x00, 0xa8, 0x00);
+        desktop.AddChild(&win2);
+    #endif
     interrupts.Activate();
     while (1){
-        desktop.Draw(&vga);
+        #ifdef GRAPHICS_MODE
+            desktop.Draw(&vga);
+        #endif
     }
 }

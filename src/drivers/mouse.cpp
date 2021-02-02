@@ -34,7 +34,7 @@ void MouseDriver :: Activate(){
     commandPort.Write(0x60); // set state
     dataPort.Write(state);
     commandPort.Write(0xd4);
-    dataPort.Write(0xf4); // activate keyboard
+    dataPort.Write(0xf4); // activate mouse
     dataPort.Read();
     printf("[OK] Mouse Attached.\n");
 }
@@ -46,9 +46,9 @@ uint32_t MouseDriver::HandleInterrupt(uint32_t esp){
         return esp;
     uint8_t key = dataPort.Read();    
     buffer[offset] = key;
-    offset = (offset + 1) % 3;
     if(this->handler == 0)
         return esp;
+    offset = (offset + 1) % 3;
     //movement interrupt
     if(offset == 0){
         if(buffer[1] != 0 || buffer[2] != 0)

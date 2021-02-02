@@ -45,7 +45,7 @@ void Desktop::OnMouseMove(int32_t x, int32_t y)
 
     if(newMouseY < 0) newMouseY = 0;
     if(newMouseY >= h) newMouseY = h - 1;
-    CompositeWidget::OnMouseMove(MouseX, MouseY, newMouseX, newMouseX);
+    CompositeWidget::OnMouseMove(MouseX, MouseY, newMouseX, newMouseY);
 
     MouseX = newMouseX;
     MouseY = newMouseY;
