@@ -1,6 +1,8 @@
 #include <hardwarecommunication/interrupts.h>
+
 using namespace myos::hardwarecommunication;
 using namespace myos::common;
+using namespace myos;
 
 void printf(char* str);
 void printfHex(uint8_t);
@@ -39,12 +41,13 @@ void InterruptManager ::SetInterruptDescriptorTableEntry(
     interruptDescriptorTable[interruptnumber].reserved = 0x00;
 }
 
-InterruptManager:: InterruptManager(GlobalDescriptorTable* gdt)
+InterruptManager:: InterruptManager(GlobalDescriptorTable* gdt, TaskManager* taskManager)
 : picMasterCommand(0x20),
   picMasterData(0x21),
   picSlaveCommand(0xA0),
   picSlaveData(0xA1)
 {
+    this->taskManager = taskManager;
     uint16_t codeSegment = gdt->CodeSegmentSelector();
     const uint8_t IDT_INTERRUPT_GATE = 0xe;
 
@@ -100,10 +103,13 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp){
         printfHex(interrupt);
         printf("\n");
     }
+    if(interrupt == 0x20){
+        esp = (uint32_t)taskManager->Schedule((CPUState*)esp);
+    }
     if(interrupt >= 0x20 && interrupt < 0x30){
         picMasterCommand.Write(0x20);
         // if it's in slave interrupts
-        if(interrupt > 0x28)
+        if(interrupt >= 0x28)
             picSlaveCommand.Write(0x20);
     }
     return esp;

@@ -8,17 +8,19 @@
 #include <drivers/vga.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
+#include <multitasking.h>
 #define SCREEEN_HEIGHT 25
 #define SCREEEN_WITDH 80 
 
-// #define GRAPHICS_MODE
+#define GRAPHICS_MODE
 
 using namespace myos;
 using namespace myos::common;
 using namespace myos::hardwarecommunication;
 using namespace myos::drivers;
 using namespace myos::gui;
-
+Desktop* mainDesktop;
+VideoGraphicsArray* mainVGA;
 void printf(char *str)
 {
     static uint16_t *graphicPointer = (uint16_t *)0xb8000;
@@ -46,9 +48,9 @@ void printf(char *str)
         }
         if (y >= SCREEEN_HEIGHT)
         {
-            for (int i = 0; i < SCREEEN_HEIGHT; ++i)
-                for (int j = 0; j < SCREEEN_WITDH; ++j)
-                    graphicPointer[i * SCREEEN_WITDH + j] = (graphicPointer[i * SCREEEN_WITDH + j] & 0xFF00) | ' ';
+            for (y = 0; y < SCREEEN_HEIGHT; ++y)
+                for (x = 0; x < SCREEEN_WITDH; ++x)
+                    graphicPointer[y * SCREEEN_WITDH + x] = (graphicPointer[y * SCREEEN_WITDH + x] & 0xFF00) | ' ';
             y = 0;
             x = 0;
         }
@@ -63,6 +65,24 @@ void printfHex(uint8_t key){
     printf(text);
 }
 
+
+void taskA(){
+    while(true)
+        printf("A");
+}
+
+void taskB(){
+    while(true)
+        printf("B");
+}
+
+void DrawStuff(){
+    while (1){
+        #ifdef GRAPHICS_MODE
+            mainDesktop->Draw(mainVGA);
+        #endif
+    }
+}
 typedef void (*constructor)();
 extern "C" constructor start_ctors;
 extern "C" constructor end_ctors;
@@ -122,8 +142,15 @@ extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumb
 {
     printf("Booting up the system.\n");
     GlobalDescriptorTable gdt;
-    InterruptManager interrupts(&gdt);
+    TaskManager taskManager;
+    Task GUIDrawer(&gdt, DrawStuff);
+    taskManager.AddTask(&GUIDrawer);
+
+    InterruptManager interrupts(&gdt, &taskManager);
+    #ifdef GRAPHICS_MODE
     Desktop desktop(320, 200, 0x00, 0x00, 0xa8);
+    mainDesktop = &desktop;
+    #endif
     DriverManager drvMgr;
     #ifndef GRAPHICS_MODE
         PrintfKeyboardEventHandler keyboardEventHandler;
@@ -145,6 +172,7 @@ extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumb
     PCIController.SelectDrivers(&drvMgr, &interrupts);
     #ifdef GRAPHICS_MODE
         VideoGraphicsArray vga;
+        mainVGA = &vga;
     #endif
     drvMgr.ActivateAll();
     //printf("\nWell I'm done.");
@@ -156,9 +184,5 @@ extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumb
         desktop.AddChild(&win2);
     #endif
     interrupts.Activate();
-    while (1){
-        #ifdef GRAPHICS_MODE
-            desktop.Draw(&vga);
-        #endif
-    }
+    while (1);
 }
