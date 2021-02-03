@@ -21,7 +21,7 @@ Then if you want to boot it on hardware you should add menu item to the grub.cfg
 
  - Global Descriptor Table (GDT)
  - Interrupt Descriptor Table (IDT)
- - Handling Interrupts
+ - Interrupt Handling
  - Peripheral Component Interconnection (PCI)
  - Video Graphics Array Communication(VGA)
  - Multitasking
