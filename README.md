@@ -24,4 +24,5 @@ Then if you want to boot it on hardware you should add menu item to the grub.cfg
  - Handling Interrupts
  - Peripheral Component Interconnection (PCI)
  - Video Graphics Array Communication(VGA)
+ - Multitasking
  - Dynamic Memory Allocation (malloc)
