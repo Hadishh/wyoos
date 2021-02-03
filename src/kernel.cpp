@@ -9,6 +9,7 @@
 #include <gui/desktop.h>
 #include <gui/window.h>
 #include <multitasking.h>
+#include <memorymanagment.h>
 #define SCREEEN_HEIGHT 25
 #define SCREEEN_WITDH 80 
 
@@ -79,7 +80,8 @@ void taskB(){
 void DrawStuff(){
     while (1){
         #ifdef GRAPHICS_MODE
-            mainDesktop->Draw(mainVGA);
+            if(mainDesktop != 0 && mainVGA != 0)
+                mainDesktop->Draw(mainVGA);
         #endif
     }
 }
@@ -143,6 +145,22 @@ extern "C" void kernelMain(const void *multiboot_structure, uint32_t /*magicnumb
     printf("Booting up the system.\n");
     GlobalDescriptorTable gdt;
     TaskManager taskManager;
+    uint32_t* memupper = (uint32_t*)((size_t)multiboot_structure + 8); //size of the 
+    common::size_t heap = 10 * 1024 * 1024;
+    MemoryManager memoryManager(heap, (*memupper) * 1024 - heap - 10*1024);
+    printf("heap:0x");
+    printfHex((heap >> 24) & 0xff);
+    printfHex((heap >> 16) & 0xff);
+    printfHex((heap >> 8) & 0xff);
+    printfHex((heap) & 0xff);
+
+    void* allocated = memoryManager.malloc(1024);
+    printf("\nallocated:0x");
+    printfHex(((size_t)allocated >> 24) & 0xff);
+    printfHex(((size_t)allocated >> 16) & 0xff);
+    printfHex(((size_t)allocated >> 8) & 0xff);
+    printfHex(((size_t)allocated) & 0xff);
+    printf("\n");
     Task GUIDrawer(&gdt, DrawStuff);
     taskManager.AddTask(&GUIDrawer);
 

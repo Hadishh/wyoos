@@ -146,11 +146,13 @@ BaseAddressRegister PeripheralComponentInterconnectController::GetBaseAddressReg
 
 
 Driver* PeripheralComponentInterconnectController:: GetDriver(PeripheralComponentInterconnectDescriptor device, InterruptManager* interruptManager){
+    Driver* driver = 0;
     switch (device.vendor_id)
     {
         case 0x1022: //AMD
             switch(device.device_id){
                 case 0x2000: // am79c973
+                    // driver = new amd_am79c973();
                     break;
             }
             break;

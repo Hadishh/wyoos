@@ -4,7 +4,7 @@
 #include <hardwarecommunication/port.h>
 #include <hardwarecommunication/interrupts.h>
 #include <drivers/driver.h>
-
+#include <memorymanagment.h>
 namespace myos
 {
     namespace hardwarecommunication
